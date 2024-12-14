@@ -1,18 +1,11 @@
 import User from "../models/User"
-import { hashPassword } from "../utils/auth"
+import { hashPassword, checkPassword } from "../utils/auth"
 import {validationResult} from 'express-validator'
 
 
 export const createAccount = async (req, res) => {
     try {
 
-        //manejar errores 
-        let errors = validationResult(req)
-        if (!errors.isEmpty()){
-            return res.status(400).json({errors: errors.array()})
-
-        }
-        
         const { email, password, handle } = req.body;
 
         // Check if email already exists
@@ -54,5 +47,27 @@ export const createAccount = async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+
+
+export const login = async (req, res) => {
+    
+     // Comprobar si el usuario existe
+     const { email, password } = req.body;
+
+     const user = await User.findOne({ email });
+     if (!user) {
+         const error = new Error('El usuario no existe');
+         return res.status(404).json({ error: error.message });
+     }
+
+     // comprobar el password si el usuario existe
+     const isPasswordCorrect  = await checkPassword(password, user.password)
+     if (!isPasswordCorrect) {
+        const error = new Error('Contraseña incorrecta');
+        return res.status(401).json({ error: error.message }); // 401 indica que no esta autorizado para ese recurso.
+    }
+    res.send('Autenticado...')
+
+}
 
 
