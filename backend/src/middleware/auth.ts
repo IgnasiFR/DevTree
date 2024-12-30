@@ -1,35 +1,34 @@
-import jwt from 'jsonwebtoken'
-import User from '../models/User'
+import jwt from 'jsonwebtoken';
+import User from '../models/User';
 
-export const authenticate = async (req, res, next) =>{
-    const bearer = req.headers.authorization
+export const authenticate = async (req, res, next) => {
+    const bearer = req.headers.authorization;
 
     if (!bearer) {
-        const error = new Error('No autorizado')
-        return res.status(401).json({error: error.message})
+        return res.status(401).json({ error: 'No autorizado' });
     }
-    const [, token] = bearer.split(' ')
-    
-    if(!token){
-        const error = new Error('No autorizado')
-        return res.status(401).json({error: error.message})
+
+    const [, token] = bearer.split(' ');
+
+    if (!token) {
+        return res.status(401).json({ error: 'No autorizado' });
     }
 
     try {
-        const result = jwt.verify(token, process.env.JWT_SECRET)
-        if(typeof result === 'object' && result.id){
-            const user = await User.findById(result.id).select('name handle email')
-            if(!user) {
-                const error = new Error('El usuario no existe')
-                return res.status(404).json({error: error.message})
-            }
-            req.user = user
-            next()
-        }
-        
-    } catch (error) {
-        res.status(500).json({error: 'Toke no Válido'})
-        
-    }
+        const result = jwt.verify(token, process.env.JWT_SECRET);
 
-}
+        if (typeof result === 'object' && result.id) {
+            const user = await User.findById(result.id).select('name handle email description');
+            if (!user) {
+                return res.status(404).json({ error: 'El usuario no existe' });
+            }
+
+            req.user = user;
+            next();
+        } else {
+            return res.status(401).json({ error: 'Token no válido' });
+        }
+    } catch (error) {
+        return res.status(401).json({ error: 'Token no válido' });
+    }
+};

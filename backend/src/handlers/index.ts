@@ -77,3 +77,24 @@ export const login = async (req, res) => {
 export const getUser = async(req,res) =>{
   res.json(req.user)
 }
+
+export const updateProfile = async(req,res) =>{
+    try {
+        const slug = await import('slug');
+        const {handle, description} = req.body
+        const formattedHandle = slug.default(handle);
+        const handleExists = await User.findOne({ handle: formattedHandle });
+        if (handleExists && handleExists.email !== req.user.email) {
+            const error = new Error('Nombre de usuario ya registrado');
+            return res.status(409).json({ error: error.message });
+        }
+        req.user.description = description
+        req.user.handle = handle
+        await req.user.save()
+        res.send('Perfil actualizado correctamente')
+    
+    } catch (e) {
+        const error = new Error('Hubo un error')
+        return res.status(500).json({error: error.message})
+    }
+  }
